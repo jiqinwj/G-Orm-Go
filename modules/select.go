@@ -1,6 +1,9 @@
 package modules
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // S6SelectBuilder 用于构造 SELECT 语句
 type S6SelectBuilder[T any] struct {
@@ -180,10 +183,81 @@ func (p7this *S6SelectBuilder[T]) F8BuildQuery() (*S6Query, error) {
 
 	p7this.sqlString.WriteByte(';')
 
+	fmt.Println("打印构造器的sql---", p7this.sqlString.String())
+
 	p7s6query := &S6Query{
 		SQLString: p7this.sqlString.String(),
 		S5Value:   p7this.s5Value,
 	}
 
 	return p7s6query, nil
+}
+
+func f8DoGetList[T any](i9ctx context.Context, i9Session I9Session, p7s6Monitor *s6Monitor, p7s6Context *S6QueryContext) *S6QueryResult {
+	var f8HandleFunc F8MiddlewareHandle = func(ctx context.Context, p7s6Context *S6QueryContext) *S6QueryResult {
+		// 查询构造器构造查询。注意，这里用的是查询上下文的构造方法，防止查询语句重复构造。
+		p7s6Query, err := p7s6Context.F8CTXBuildQuery()
+		if nil != err {
+			return &S6QueryResult{
+				I9Err: err,
+			}
+		}
+		// 执行查询
+		p7SqlRows, err := i9Session.f8DoQueryContext(ctx, p7s6Query.SQLString, p7s6Query.S5Value...)
+		if nil != err {
+			return &S6QueryResult{
+				I9Err: err,
+			}
+		}
+
+		// 处理数据库返回的查询结果
+		t4s5p7T := make([]*T, 0, 4)
+		for p7SqlRows.Next() {
+			// new 一个类型 T 的变量
+			t4p7T := new(T)
+			// 获取类型 T 对应的映射模型
+			t4s6model, err := i9Session.f8GetS6Monitor().i9Registry.F8Get(t4p7T)
+			if nil != err {
+				return &S6QueryResult{
+					I9Err: err,
+				}
+			}
+
+			// 用数据库返回的查询结果构造结构体
+			t4result := i9Session.f8GetS6Monitor().f8NewI9Result(t4p7T, t4s6model)
+			err = t4result.F8SetField(p7SqlRows)
+
+			t4s5p7T = append(t4s5p7T, t4p7T)
+		}
+
+		return &S6QueryResult{
+			AnyResult: t4s5p7T,
+			I9Err:     err,
+		}
+	}
+
+	// 中间件套娃
+	for i := len(p7s6Monitor.s5f8Middleware) - 1; 0 <= i; i-- {
+		f8HandleFunc = p7s6Monitor.s5f8Middleware[i](f8HandleFunc)
+	}
+	// 执行套娃
+	p7s6Result := f8HandleFunc(i9ctx, p7s6Context)
+
+	// 从中间件的 S6QueryResult 里面把结果捞出来
+	return p7s6Result
+}
+
+// F8GetList 执行查询获取多条数据，用映射关系
+func (p7this *S6SelectBuilder[T]) F8GetList(i9ctx context.Context) ([]*T, error) {
+	p7s6Context := &S6QueryContext{
+		QueryType: "SELECT",
+		i9Builder: p7this,
+		p7s6Model: p7this.s6QueryBuilder.p7s6Model,
+		p7s6Query: nil,
+	}
+	p7s6Result := f8DoGetList[T](i9ctx, p7this.i9Session, &p7this.s6Monitor, p7s6Context)
+	if nil != p7s6Result.AnyResult {
+		return p7s6Result.AnyResult.([]*T), p7s6Result.I9Err
+	}
+	return nil, p7s6Result.I9Err
 }

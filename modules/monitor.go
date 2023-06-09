@@ -5,6 +5,8 @@ import (
 	"G-Orm-go/modules/metadata"
 	"G-Orm-go/modules/result"
 	"context"
+	"database/sql"
+	"fmt"
 )
 
 // 控制器，控制和数据库有关的抽象的实现
@@ -73,4 +75,37 @@ func f8DoFirst[T any](i9ctx context.Context, i9Session I9Session, p7s6Monitor *s
 
 	// 从中间件的 S6QueryResult 里面把结果捞出来
 	return p7s6Result
+}
+
+func f8DoEXEC(ctx context.Context, i9Session I9Session, p7s6Monitor *s6Monitor, p7s6Context *S6QueryContext) S6Result {
+	var f8HandleFunc F8MiddlewareHandle = func(ctx context.Context, p7s6Context *S6QueryContext) *S6QueryResult {
+		// 查询构造器构造查询
+		p7s6Query, err := p7s6Context.i9Builder.F8BuildQuery()
+		if nil != err {
+			return &S6QueryResult{
+				I9Err: err,
+			}
+		}
+		// 执行查询
+		sqlResult, err2 := i9Session.f8DoEXECContext(ctx, p7s6Query.SQLString, p7s6Query.S5Value...)
+		fmt.Println("error", err2)
+		return &S6QueryResult{
+			AnyResult: sqlResult,
+			I9Err:     err2,
+		}
+	}
+
+	// 中间件套娃
+	for i := len(p7s6Monitor.s5f8Middleware) - 1; 0 <= i; i-- {
+		f8HandleFunc = p7s6Monitor.s5f8Middleware[i](f8HandleFunc)
+	}
+	// 执行套娃
+	p7s6Result := f8HandleFunc(ctx, p7s6Context)
+
+	// 从中间件的 S6QueryResult 里面把结果捞出来
+	var i9SQLResult sql.Result = nil
+	if nil != p7s6Result.AnyResult {
+		i9SQLResult = p7s6Result.AnyResult.(sql.Result)
+	}
+	return S6Result{I9SQLResult: i9SQLResult, I9Err: p7s6Result.I9Err}
 }

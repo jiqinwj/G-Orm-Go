@@ -17,7 +17,6 @@ func SqlLogMiddlewareBuild() modules.F8Middleware {
 					I9Err: err,
 				}
 			}
-			log.Println("慢sql")
 			// 把查询语句和参数记到日志。注意，生产环境需要进行数据脱敏处理。
 			log.Println(p7s6Query.SQLString, p7s6Query.S5Value)
 			return next(ctx, p7s6Context)

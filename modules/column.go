@@ -84,3 +84,15 @@ func (this S6Column) f8GetAlias() string {
 func (this S6Column) f8BuildExpression(p7s6Builder *s6QueryBuilder) error {
 	return this.f8BuildColumn(p7s6Builder, false)
 }
+
+// ToAssignment 赋值语句，对应，列 = 表达式
+func (this S6Column) ToAssignment(input any) S6Assignment {
+	i9Expr, ok := input.(i9Expression)
+	if !ok {
+		i9Expr = S6Value{Value: input}
+	}
+	return S6Assignment{
+		s6Column: this,
+		i9Expr:   i9Expr,
+	}
+}

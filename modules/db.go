@@ -5,6 +5,7 @@ import (
 	"G-Orm-go/modules/result"
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 // F8S6DBOption 方法抽象：针对 S6DB 的 Option 设计模式
@@ -51,6 +52,7 @@ func (p7this *S6DB) f8GetS6Monitor() s6Monitor {
 }
 
 func (p7this *S6DB) f8DoQueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	fmt.Println("query sql", query)
 	return p7this.p7s6SqlDB.QueryContext(ctx, query, args...)
 }
 
