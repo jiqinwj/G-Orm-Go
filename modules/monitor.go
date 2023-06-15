@@ -80,7 +80,8 @@ func f8DoFirst[T any](i9ctx context.Context, i9Session I9Session, p7s6Monitor *s
 func f8DoEXEC(ctx context.Context, i9Session I9Session, p7s6Monitor *s6Monitor, p7s6Context *S6QueryContext) S6Result {
 	var f8HandleFunc F8MiddlewareHandle = func(ctx context.Context, p7s6Context *S6QueryContext) *S6QueryResult {
 		// 查询构造器构造查询
-		p7s6Query, err := p7s6Context.i9Builder.F8BuildQuery()
+		//p7s6Query, err := p7s6Context.i9Builder.F8BuildQuery()
+		p7s6Query, err := p7s6Context.F8CTXBuildQuery()
 		if nil != err {
 			return &S6QueryResult{
 				I9Err: err,
